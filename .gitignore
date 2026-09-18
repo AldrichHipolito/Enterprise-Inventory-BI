@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables — NEVER commit these, they contain real secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# TypeScript build output
+backend/dist/
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# AI coding tool metadata (not part of the actual project)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
+CLAUDE.md
+AGENTS.md

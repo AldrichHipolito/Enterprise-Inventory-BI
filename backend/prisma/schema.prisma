@@ -1,0 +1,404 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Security ----------
+
+model User {
+  id                Int             @id @default(autoincrement())
+  email             String          @unique
+  passwordHash      String          @map("password_hash")
+  fullName          String          @map("full_name")
+  isActive          Boolean         @default(true) @map("is_active")
+  failedLoginCount  Int             @default(0) @map("failed_login_count")
+  mustChangePassword Boolean        @default(true) @map("must_change_password")
+  deletedAt         DateTime?       @map("deleted_at")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  roles             UserRole[]
+  warehouses        UserWarehouse[]
+  loginHistory      LoginHistory[]
+  sessions          Session[]
+  createdMovements  StockMovement[] @relation("MovementCreatedBy")
+  approvedAdjustments StockAdjustment[] @relation("AdjustmentApprovedBy")
+  createdPOs        PurchaseOrder[] @relation("POCreatedBy")
+  receivedGoods     GoodsReceipt[]  @relation("ReceiptReceivedBy")
+  auditLogs         AuditLog[]
+  activityLogs      ActivityLog[]
+  files             File[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId Int  @map("user_id")
+  roleId Int  @map("role_id")
+  user   User @relation(fields: [userId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserWarehouse {
+  userId      Int       @map("user_id")
+  warehouseId Int       @map("warehouse_id")
+  user        User      @relation(fields: [userId], references: [id])
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@id([userId, warehouseId])
+  @@map("user_warehouses")
+}
+
+model LoginHistory {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @map("user_id")
+  user         User?    @relation(fields: [userId], references: [id])
+  success      Boolean
+  ipAddress    String?  @map("ip_address")
+  attemptedAt  DateTime @default(now()) @map("attempted_at")
+
+  @@map("login_history")
+}
+
+model Session {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  user              User      @relation(fields: [userId], references: [id])
+  refreshTokenHash  String    @map("refresh_token_hash")
+  expiresAt         DateTime  @map("expires_at")
+  revokedAt         DateTime? @map("revoked_at")
+
+  @@map("sessions")
+}
+
+// ---------- Master Data ----------
+
+model Category {
+  id                Int         @id @default(autoincrement())
+  name              String
+  parentCategoryId  Int?        @map("parent_category_id")
+  parent            Category?   @relation("CategoryTree", fields: [parentCategoryId], references: [id])
+  children          Category[]  @relation("CategoryTree")
+  products          Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+
+  @@map("brands")
+}
+
+model Unit {
+  id           Int       @id @default(autoincrement())
+  name         String
+  abbreviation String
+  products     Product[]
+
+  @@map("units")
+}
+
+model Supplier {
+  id              Int               @id @default(autoincrement())
+  name            String
+  contactEmail    String?           @map("contact_email")
+  phone           String?
+  isActive        Boolean           @default(true) @map("is_active")
+  purchaseOrders  PurchaseOrder[]
+  supplierProducts SupplierProduct[]
+
+  @@map("suppliers")
+}
+
+model SupplierProduct {
+  id            Int      @id @default(autoincrement())
+  supplierId    Int      @map("supplier_id")
+  productId     Int      @map("product_id")
+  supplierSku   String?  @map("supplier_sku")
+  unitCost      Decimal  @map("unit_cost") @db.Decimal(12, 2)
+  leadTimeDays  Int?     @map("lead_time_days")
+  isPreferred   Boolean  @default(false) @map("is_preferred")
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
+
+  @@unique([supplierId, productId])
+  @@map("supplier_products")
+}
+
+model Warehouse {
+  id            Int                  @id @default(autoincrement())
+  name          String
+  address       String?
+  locations     WarehouseLocation[]
+  users         UserWarehouse[]
+  goodsReceipts GoodsReceipt[]
+  movements     StockMovement[]
+  adjustments   StockAdjustment[]
+
+  @@map("warehouses")
+}
+
+model WarehouseLocation {
+  id          Int       @id @default(autoincrement())
+  warehouseId Int       @map("warehouse_id")
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  aisle       String?
+  bin         String?
+
+  @@unique([warehouseId, aisle, bin])
+  @@map("warehouse_locations")
+}
+
+model Product {
+  id              Int               @id @default(autoincrement())
+  sku             String            @unique
+  name            String
+  categoryId      Int               @map("category_id")
+  brandId         Int?              @map("brand_id")
+  unitId          Int               @map("unit_id")
+  reorderLevel    Decimal           @default(0) @map("reorder_level") @db.Decimal(12, 2)
+  overstockLevel  Decimal?          @map("overstock_level") @db.Decimal(12, 2)
+  isActive        Boolean           @default(true) @map("is_active")
+  deletedAt       DateTime?         @map("deleted_at")
+
+  category        Category          @relation(fields: [categoryId], references: [id])
+  brand           Brand?            @relation(fields: [brandId], references: [id])
+  unit            Unit              @relation(fields: [unitId], references: [id])
+  supplierProducts SupplierProduct[]
+  poItems         PurchaseOrderItem[]
+  movements       StockMovement[]
+  adjustments     StockAdjustment[]
+
+  @@map("products")
+}
+
+// ---------- Purchasing ----------
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id               Int                  @id @default(autoincrement())
+  supplierId       Int                  @map("supplier_id")
+  createdByUserId  Int                  @map("created_by_user_id")
+  status           PurchaseOrderStatus  @default(DRAFT)
+  orderDate        DateTime             @map("order_date") @db.Date
+  totalAmount      Decimal              @default(0) @map("total_amount") @db.Decimal(14, 2)
+
+  supplier         Supplier             @relation(fields: [supplierId], references: [id])
+  createdBy        User                 @relation("POCreatedBy", fields: [createdByUserId], references: [id])
+  items            PurchaseOrderItem[]
+  goodsReceipts    GoodsReceipt[]
+
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                Int             @id @default(autoincrement())
+  purchaseOrderId   Int             @map("purchase_order_id")
+  productId         Int             @map("product_id")
+  quantityOrdered   Decimal         @map("quantity_ordered") @db.Decimal(12, 2)
+  unitCost          Decimal         @map("unit_cost") @db.Decimal(12, 2)
+
+  purchaseOrder     PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id])
+  product           Product         @relation(fields: [productId], references: [id])
+  goodsReceiptItems GoodsReceiptItem[]
+
+  @@map("purchase_order_items")
+}
+
+model GoodsReceipt {
+  id                Int                  @id @default(autoincrement())
+  purchaseOrderId   Int                  @map("purchase_order_id")
+  warehouseId       Int                  @map("warehouse_id")
+  receivedByUserId  Int                  @map("received_by_user_id")
+  receivedDate      DateTime             @map("received_date") @db.Date
+
+  purchaseOrder     PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id])
+  warehouse         Warehouse            @relation(fields: [warehouseId], references: [id])
+  receivedBy        User                 @relation("ReceiptReceivedBy", fields: [receivedByUserId], references: [id])
+  items             GoodsReceiptItem[]
+
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptItem {
+  id                    Int                @id @default(autoincrement())
+  goodsReceiptId        Int                @map("goods_receipt_id")
+  purchaseOrderItemId   Int                @map("purchase_order_item_id")
+  quantityReceived      Decimal            @map("quantity_received") @db.Decimal(12, 2)
+
+  goodsReceipt          GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id])
+  purchaseOrderItem     PurchaseOrderItem  @relation(fields: [purchaseOrderItemId], references: [id])
+  stockMovement         StockMovement?
+
+  @@map("goods_receipt_items")
+}
+
+// ---------- Inventory ----------
+
+enum StockMovementType {
+  INBOUND
+  OUTBOUND
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+}
+
+model StockMovement {
+  id                    Int                @id @default(autoincrement())
+  productId             Int                @map("product_id")
+  warehouseId           Int                @map("warehouse_id")
+  type                  StockMovementType
+  quantity              Decimal            @db.Decimal(12, 2)
+  relatedMovementId     Int?               @unique @map("related_movement_id")
+  goodsReceiptItemId    Int?               @unique @map("goods_receipt_item_id")
+  createdByUserId       Int                @map("created_by_user_id")
+  createdAt             DateTime           @default(now()) @map("created_at")
+
+  product               Product            @relation(fields: [productId], references: [id])
+  warehouse             Warehouse          @relation(fields: [warehouseId], references: [id])
+  relatedMovement       StockMovement?     @relation("TransferPair", fields: [relatedMovementId], references: [id])
+  pairedWith            StockMovement?     @relation("TransferPair")
+  goodsReceiptItem      GoodsReceiptItem?  @relation(fields: [goodsReceiptItemId], references: [id])
+  createdBy             User               @relation("MovementCreatedBy", fields: [createdByUserId], references: [id])
+  adjustment            StockAdjustment?
+
+  @@index([productId, warehouseId, createdAt])
+  @@map("stock_movements")
+}
+
+model StockAdjustment {
+  id                Int             @id @default(autoincrement())
+  productId         Int             @map("product_id")
+  warehouseId       Int             @map("warehouse_id")
+  stockMovementId   Int             @unique @map("stock_movement_id")
+  quantityDelta     Decimal         @map("quantity_delta") @db.Decimal(12, 2)
+  reason            String
+  approvedByUserId  Int             @map("approved_by_user_id")
+
+  product           Product         @relation(fields: [productId], references: [id])
+  warehouse         Warehouse       @relation(fields: [warehouseId], references: [id])
+  stockMovement     StockMovement   @relation(fields: [stockMovementId], references: [id])
+  approvedBy        User            @relation("AdjustmentApprovedBy", fields: [approvedByUserId], references: [id])
+
+  @@map("stock_adjustments")
+}
+
+// ---------- System ----------
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+model AuditLog {
+  id           Int          @id @default(autoincrement())
+  userId       Int?         @map("user_id")
+  tableName    String       @map("table_name")
+  recordId     Int          @map("record_id")
+  action       AuditAction
+  beforeState  Json?        @map("before_state")
+  afterState   Json?        @map("after_state")
+  timestamp    DateTime     @default(now())
+
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([tableName, recordId])
+  @@map("audit_logs")
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  activity   String
+  timestamp  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("activity_logs")
+}
+
+model File {
+  id                Int      @id @default(autoincrement())
+  uploadedByUserId  Int      @map("uploaded_by_user_id")
+  tableName         String   @map("table_name")
+  recordId          Int      @map("record_id")
+  filePath          String   @map("file_path")
+  originalFilename  String   @map("original_filename")
+  uploadedAt        DateTime @default(now()) @map("uploaded_at")
+
+  uploadedBy        User     @relation(fields: [uploadedByUserId], references: [id])
+
+  @@map("files")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  message    String
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("settings")
+}
+
