@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
 import { AppSidebar } from "@/components/layout/sidebar"
-// import { Topbar } from "@/components/layout/topbar"
+import { Topbar } from "@/components/layout/topbar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -30,9 +30,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider >
       <AppSidebar />
       <main className="flex-1">
+        <Topbar breadcrumb="Overview" />
         <SidebarTrigger />
         {children}
       </main>

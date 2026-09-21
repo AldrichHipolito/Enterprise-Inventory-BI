@@ -98,7 +98,7 @@ export function AppSidebar() {
   const visibleNav = getVisibleNavKeys(user?.roles ?? [])
 
   return (
-    <Sidebar className="border-none bg-[#0B2545] text-[#cdd7e8]">
+    <Sidebar className="border-none bg-[#0b2545] text-[#cdd7e8]">
       <SidebarHeader className="gap-3 px-2 pt-2">
         <div className="flex items-center gap-2.5 px-1 pb-2">
           <div className="flex size-9 items-center justify-center rounded-lg bg-[#0B2545] text-[#FF6B35]">

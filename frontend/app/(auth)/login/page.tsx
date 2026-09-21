@@ -45,8 +45,10 @@ export default function LoginPage() {
       // Simplest possible storage to get the flow working end-to-end.
       // Worth revisiting later: httpOnly refresh-token cookie set by the
       // backend + access token kept in memory only, to reduce XSS exposure.
+
       localStorage.setItem("accessToken", result.accessToken)
       localStorage.setItem("refreshToken", result.refreshToken)
+      localStorage.setItem("userFullName", result.user.fullName)
 
       if (result.user.mustChangePassword) {
         router.push("/change-password") // build this route later
