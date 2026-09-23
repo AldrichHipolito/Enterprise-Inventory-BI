@@ -14,6 +14,17 @@
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { getCurrentUser } from "@/lib/auth"
 
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 function getInitials(fullName: string | null): string {
   if (!fullName) return "?"
   const parts = fullName.trim().split(/\s+/)
@@ -46,7 +57,20 @@ export function Topbar({ breadcrumb = "Overview" }: TopbarProps) {
           {user?.roles?.join(", ") ?? "Unknown role"}
         </div>
         <div className="flex size-8 items-center justify-center rounded-full bg-[#0B2545] text-[12px] font-bold text-white">
-          {getInitials(fullName)}
+          
+
+          <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" />}>
+            {getInitials(fullName)}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuItem>Logout</DropdownMenuItem>
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         </div>
       </div>
     </div>

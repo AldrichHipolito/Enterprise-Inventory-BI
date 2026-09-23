@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <AppSidebar />
       <main className="flex-1">
         <Topbar breadcrumb="Overview" />
-        <SidebarTrigger />
+        {/* <SidebarTrigger /> */}
         {children}
       </main>
     </SidebarProvider>
