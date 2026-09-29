@@ -263,6 +263,59 @@ async function main() {
     console.log("");
   }
 
+  console.log("Seeding one test account per remaining role...");
+  // Unlike the Administrator account above (which follows the real
+  // random-password provisioning flow from 18-security-design.md), these are
+  // throwaway LOCAL DEV/TEST accounts only — used to click through the app as
+  // each role while building the UI (starting with sidebar nav visibility).
+  // Fixed, known password on purpose, so you're not re-reading console output
+  // every time you want to log in as one of these. Never do this for a real
+  // environment.
+  const TEST_ACCOUNT_PASSWORD = "Password123!";
+
+  const TEST_ACCOUNTS: { email: string; fullName: string; roleName: string }[] = [
+    { email: "executive@eibi.local", fullName: "Test Executive", roleName: "Executive" },
+    { email: "purchasing@eibi.local", fullName: "Test Purchasing Officer", roleName: "Purchasing Officer" },
+    { email: "warehouse@eibi.local", fullName: "Test Warehouse Staff", roleName: "Warehouse Staff" },
+    { email: "inventory@eibi.local", fullName: "Test Inventory Manager", roleName: "Inventory Manager" },
+    { email: "auditor@eibi.local", fullName: "Test Auditor", roleName: "Auditor" },
+  ];
+
+  const testPasswordHash = await bcrypt.hash(TEST_ACCOUNT_PASSWORD, BCRYPT_COST);
+
+  for (const account of TEST_ACCOUNTS) {
+    const existing = await prisma.user.findUnique({ where: { email: account.email } });
+
+    if (existing) {
+      console.log(`  ${account.roleName} test account already exists (${account.email}) — skipping.`);
+      continue;
+    }
+
+    const role = await prisma.role.findUniqueOrThrow({ where: { name: account.roleName } });
+
+    await prisma.user.create({
+      data: {
+        email: account.email,
+        passwordHash: testPasswordHash,
+        fullName: account.fullName,
+        mustChangePassword: false, // skip the forced-change flow for test accounts
+        roles: { create: { roleId: role.id } },
+      },
+    });
+
+    console.log(`  Created ${account.roleName} test account: ${account.email}`);
+  }
+
+  console.log("");
+  console.log("========================================================");
+  console.log(" Test account credentials (all use the same password):");
+  console.log(`   Password: ${TEST_ACCOUNT_PASSWORD}`);
+  for (const account of TEST_ACCOUNTS) {
+    console.log(`   ${account.roleName.padEnd(20)} -> ${account.email}`);
+  }
+  console.log("========================================================");
+  console.log("");
+
   console.log("Seed complete.");
 }
 

@@ -155,3 +155,20 @@ export async function changePassword(userId: number, input: ChangePasswordInput)
     })
   ]);
 }
+
+export async function logout(userId: number, refreshToken: string): Promise<void> {
+  const activeSessions = await prisma.session.findMany({
+    where: { userId, revokedAt: null },
+  });
+
+  for (const session of activeSessions) {
+    const matches = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+    if (matches) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
+      return;
+    }
+  }
+}

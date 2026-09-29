@@ -11,8 +11,8 @@
 
 import type { NextFunction, Request, Response } from "express";
 
-import { loginSchema, changePasswordSchema } from "./auth.dto";
-import { login, changePassword } from "./auth.service";
+import { loginSchema, changePasswordSchema, logoutSchema } from "./auth.dto";
+import { login, changePassword, logout } from "./auth.service";
 
 export async function loginController(req: Request, res: Response, next: NextFunction) {
   try {
@@ -31,6 +31,16 @@ export async function changePasswordController(req: Request, res: Response, next
     await changePassword(req.user!.sub, input);
 
     res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function logoutController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const input = logoutSchema.parse(req.body);
+    await logout(req.user!.sub, input.refreshToken);
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     next(error);
   }

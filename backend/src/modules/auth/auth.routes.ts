@@ -11,12 +11,14 @@
 import { Router } from "express";
 import { authenticate } from "../../middleware/authenticate";
 
-import { loginController, changePasswordController, dashboardController } from "./auth.controller";
+import { loginController, changePasswordController, dashboardController, logoutController } from "./auth.controller";
 
 const router = Router();
 
 router.post("/login", loginController);
 router.post("/change-password", authenticate, changePasswordController);
 router.post("/dashboard", dashboardController);
+router.post("/logout", authenticate, logoutController);
+
 
 export default router;

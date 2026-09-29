@@ -24,5 +24,9 @@ export const changePasswordSchema = z.object({
   message: "New password must be different from your current password",
   path: ["newPassword"],
 });
-
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const logoutSchema = z.object({
+  refreshToken: z.string().min(1, "refresh token is required")
+});
+export type LogoutInput = z.infer<typeof logoutSchema>;
