@@ -10,9 +10,11 @@
 // feature, not a plain client-side dropdown.
 
 "use client"
-
+import { useState } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser, logout } from "@/lib/auth"
+import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,6 +35,8 @@ function getInitials(fullName: string | null): string {
   return (first + last).toUpperCase()
 }
 
+
+
 interface TopbarProps {
   /** e.g. "Overview" — the current page's breadcrumb trail after "Dashboard". */
   breadcrumb?: string
@@ -40,7 +44,22 @@ interface TopbarProps {
 
 export function Topbar({ breadcrumb = "Overview" }: TopbarProps) {
   const user = getCurrentUser()
+  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const fullName = typeof window !== "undefined" ? localStorage.getItem("userFullName") : null
+
+async function handleLogout() {
+  setIsLoggingOut(true)
+  const refreshToken = localStorage.getItem("refreshToken")
+  
+  if (refreshToken) {
+    try { await logout(refreshToken) } catch { /* proceed anyway */ }
+  }
+  localStorage.removeItem("accessToken")
+  localStorage.removeItem("refreshToken")
+  localStorage.removeItem("userFullName")
+  router.push("/login")
+}
 
   return (
     <div className="flex h-[60px] flex-none items-center justify-between border-b bg-white px-6">
@@ -66,7 +85,21 @@ export function Topbar({ breadcrumb = "Overview" }: TopbarProps) {
           <DropdownMenuContent>
             <DropdownMenuGroup>
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+                <DropdownMenuItem>
+                  {/* <Button onClick={handleLogout} disabled={isLoggingOut} variant="ghost" size="sm">
+                    {isLoggingOut ? "Logging out..." : "Logout"}
+                  </Button> */}
+                  <Button onClick={handleLogout} disabled={isLoggingOut} variant="ghost" size="sm">
+                    {isLoggingOut ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        Logging out...
+                      </>
+                    ) : (
+                      "Logout"
+                    )}
+                  </Button>
+                </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

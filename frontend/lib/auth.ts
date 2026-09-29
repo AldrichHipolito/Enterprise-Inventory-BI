@@ -1,5 +1,7 @@
 // lib/auth.ts
 import { jwtDecode } from "jwt-decode"
+import { apiClient } from "./api-client"
+
 
 export interface AccessTokenPayload {
   sub: number
@@ -18,4 +20,13 @@ export function getCurrentUser(): AccessTokenPayload | null {
   } catch {
     return null // malformed/corrupted token in storage
   }
+}
+
+export function logout(refreshToken: string) {
+  const accessToken = localStorage.getItem("accessToken")
+  return apiClient<{ message: string }>("/auth/logout", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ refreshToken }),
+  })
 }

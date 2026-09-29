@@ -81,6 +81,24 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --canvas: #F5F6F8;
+  --surface: #FFFFFF;
+  --ink: #101828;
+  --ink-soft: #5B6472;
+  --line: #E4E7EC;
+  --navy: #0B2545;
+  --navy-soft: #13315C;
+  --accent: #FF6B35;
+  --accent-soft: #FFE7DB;
+  --success: #12805C;
+  --success-soft: #DCF3EA;
+  --warning: #B7791F;
+  --warning-soft: #FBECD2;
+  --danger: #C0362C;
+  --danger-soft: #FBE1DE;
+  --info: #2563A6;
+  --info-soft: #E1EDF9;
 }
 
 .dark {
